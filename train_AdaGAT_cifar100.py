@@ -238,11 +238,7 @@ def load_model_states(model, save_path, tag):
 def main():
     # init model, ResNet18() can be also used here for training
     model = getattr(nets,"WideResNet")(num_classes=args.num_classes, widen_factor=10)
-    #
-    # model = getattr(nets,args.teacher_model)(num_classes=args.num_classes)
 
-    # model = getattr(nets,args.teacher_model)(num_classes=args.num_classes)
-    # model_teacher = getattr(nets,"WideResNet")(num_classes=args.num_classes, widen_factor=10)
     model_teacher = getattr(nets,args.teacher_model)(num_classes=args.num_classes)
 
     model = nn.DataParallel(model).to(device)
