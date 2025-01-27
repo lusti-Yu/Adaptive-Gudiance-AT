@@ -18,7 +18,7 @@ import math
 from autoattack_modified.autoattack import AutoAttack
 
 from models import nets
-from lbgat import lbgat_loss
+from ADaGAT import AdaGAT_loss
 
 from utils_awp import TradesAWP
 
@@ -95,122 +95,12 @@ transform_test = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-# transform_train = transforms.Compose([
-#     transforms.Resize((32, 32)),
-#     transforms.RandomHorizontalFlip(),
-#     transforms.ToTensor(),
-# ])
-#
-# transform_test = transforms.Compose([
-#     transforms.Resize((32, 32)),
-#     transforms.ToTensor(),
-# ])
 
-# traindir = './tiny-imagenet-200/train'
-# train_dataset = datasets.ImageFolder(
-# traindir,
-# transforms.Compose([
-# transforms.Resize(32),
-# transforms.RandomHorizontalFlip(),
-# transforms.ToTensor(),
-# ]))
-#
-# transform_test = transforms.Compose([
-#     transforms.Resize(32),
-#     transforms.ToTensor(),
-# ])
-
-# traindir='./tiny-imagenet-200/train'
-
-# transform_train = transforms.Compose([
-#     transforms.Lambda(lambda x: x.convert("RGB")),
-#     transforms.Resize(32),
-#     # transforms.RandomCrop(32, padding=4),
-#     transforms.RandomHorizontalFlip(),
-#     transforms.ToTensor(),
-#
-# ])
-#
-# transform_test = transforms.Compose([
-#     transforms.Lambda(lambda x: x.convert("RGB")),
-#     transforms.Resize(32),
-#     transforms.ToTensor(),
-# ])
-
-    # transform_test = transforms.Compose([
-    #     transforms.Lambda(lambda x: x.convert("RGB")),
-    #     transforms.Resize(32),
-    #     transforms.ToTensor(),
-    # ])
-
-# trainset = TinyImageNet(root='./tiny-imagenet-200',  split='train', transform=transform_train, in_memory=True)
-# train_loader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
-#
-# #
-# # transform_test = transforms.Compose([
-# #     transforms.Lambda(lambda x: x.convert("RGB")),
-# #     transforms.Resize(32),
-# #     transforms.ToTensor(),
-# # ])
-#
-# testset = TinyImageNet(root='./tiny-imagenet-200', split='val', transform=transform_test, in_memory=True)
-# test_loader = torch.utils.data.DataLoader(testset, batch_size=128, shuffle=False, num_workers=2)
 
 trainset = torchvision.datasets.CIFAR10(root='./data/cifar10', train=True, download=True, transform=transform_train)
 train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, **kwargs)
 testset = torchvision.datasets.CIFAR10(root='./data/cifar10', train=False, download=True, transform=transform_test)
 test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, **kwargs)
-
-# trainset = TinyImageNet(root='./tiny-imagenet-200', split='train', transform=transform_train, in_memory=True)
-# train_loader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
-
-#
-# testset = TinyImageNet(root='./tiny-imagenet-200', split='val', transform=transform_test, in_memory=True)
-# test_loader = torch.utils.data.DataLoader(testset, batch_size=128, shuffle=False, num_workers=2)
-
-# trainset = torchvision.datasets.SVHN(root='./data', split='train', download=True,   transform=transform_train)
-#
-# # 加载测试集
-# testset = torchvision.datasets.SVHN( root='./data', split='test', download=True, transform=transform_test)
-#
-# # 创建数据加载器
-# train_loader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True,  num_workers=2)
-#
-# test_loader = torch.utils.data.DataLoader(testset,  batch_size=128, shuffle=False, num_workers=2)
-
-#
-# traindir = './tiny-imagenet-200'
-# valdir = './tiny-imagenet-200'
-# train_dataset = datasets.ImageFolder(
-# traindir,
-# transforms.Compose([
-# transforms.Resize(32),
-# transforms.RandomHorizontalFlip(),
-# transforms.ToTensor(),
-# ]))
-#
-# test_loader = torch.utils.data.DataLoader(
-# datasets.ImageFolder(valdir, transforms.Compose([
-# transforms.Resize(32),
-# transforms.ToTensor(),
-# ])),
-# batch_size=args.batch_size, shuffle=False,
-# num_workers=4, pin_memory=True)
-
-# trainset = TinyImageNet(root='./tiny-imagenet-200', split='train', transform=transform_train, in_memory=True)
-# train_loader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
-#
-# valdir = './tiny-imagenet-200/test'
-# test_loader = torch.utils.data.DataLoader(
-# datasets.ImageFolder(valdir, transforms.Compose([
-# transforms.Resize(32),
-# transforms.ToTensor(),
-# ])),
-# batch_size=128, shuffle=False,
-# num_workers=2, pin_memory=True)
-
-# testset = TinyImageNet(root='./tiny-imagenet-200', split='val', transform=transform_test, in_memory=True)
-# test_loader = torch.utils.data.DataLoader(testset, batch_size=128, shuffle=False, num_workers=2)
 
 #
 # trainset = torchvision.datasets.CIFAR100(root='./data/cifar100', train=True, download=True, transform=transform_train)
@@ -229,7 +119,7 @@ def train(args, model, model_teacher, device, train_loader, optimizer, epoch):
         optimizer.zero_grad()
 
         # calculate robust loss
-        loss = lbgat_loss(model=model, model_teacher=model_teacher,
+        loss = AdaGAT_loss(model=model, model_teacher=model_teacher,
                            x_natural=data,
                            y=target,
                            optimizer=optimizer,
@@ -330,22 +220,13 @@ def evaluate_standard(test_loader, model):
 
 
 
-# def get_resnet18_cifar10():
-#     # 加载 ImageNet 预训练的 ResNet18 模型
-#     model = models.resnet18(pretrained=True)
-#
-#     # 调整模型的输入层和全连接层，以适应 CIFAR-10 数据集
-#     model.conv1 = torch.nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-#     model.maxpool = torch.nn.Identity()  # CIFAR-10 不需要最大池化层
-#     model.fc = torch.nn.Linear(512, 10)  # CIFAR-10 有 10 个类别
-#
-#     return model
+
 def load_model_states(model, save_path, tag):
     """Load a previously saved model states."""
     filename = os.path.join(save_path, tag)
     with open(filename, 'rb') as f:
         state_dict = torch.load(f)
-        # 如果模型是用DataParallel训练的，需要移除module前缀
+
         from collections import OrderedDict
         new_state_dict = OrderedDict()
         for k, v in state_dict.items():
@@ -366,42 +247,11 @@ def main():
 
     model = nn.DataParallel(model).to(device)
     model_teacher = nn.DataParallel(model_teacher).to(device)
-    # model = nn.DataParallel(model).to(device)
-    # model_teacher = model_teacher).to(device)
-
-    # model_teacher = nets.ResNet18_cifar(num_classes=10)
-    # model_path = './model-cifar10-wideResNet_mse/cifar10_lbgat0_0.031_mse-natural-epoch100.pt'
-    # model_teacher.load_state_dict(torch.load('resnet18.pt'))  # Load the pre-trained weights
-
-    #
-    # tag = 'model-cifar-ce-resnet18/Cifar-10-CE-RESNET18-natural-epoch100.pt'
-    # load_model_states(model_teacher, args.save_path, tag)
-    #
-    #
-    # model = model.to(device)
-    # model_teacher = model_teacher.to(device)
 
 
     # optimizer
     optimizer = optim.SGD([{'params':model.parameters()},{'params':model_teacher.parameters()}], lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    # optimizer = optim.SGD([{'params':model_teacher.parameters()}], lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
-    # optimizer = optim.SGD(model.parameters(), lr=args.lr,
-    #                       momentum=args.momentum, weight_decay=args.weight_decay)
-    # proxy = nn.DataParallel(getattr(nets, "WideResNet")(num_classes=args.num_classes)).to(device)
-    #
-    # proxy_optim = optim.SGD(proxy.parameters(), lr=args.lr)
-    # awp_adversary = TradesAWP(model=model, proxy=proxy, proxy_optim=proxy_optim, gamma=args.awp_gamma)
-
-    #### resume
-    #optimizer.load_state_dict(torch.load("model-cifar-wideResNet/cifar100_lbgat6_0.031-checkpoint_epoch91.tar"))
-    #model_teacher.load_state_dict(torch.load("model-cifar-wideResNet/cifar100_lbgat6_0.031-natural-epoch91.pt"))
-    #model.load_state_dict(torch.load("model-cifar-wideResNet/cifar100_lbgat6_0.031-epoch91.pt"))
-
-    #
-    # logger.set_names(['Learning Rate',
-    #                   'Adv Train Loss', 'Nat Train Loss', 'Nat Val Loss',
-    #                   'Adv Train Acc.', 'Nat Train Acc.', 'Nat Val Acc.'])
 
     for epoch in range(1, args.epochs + 1):
         # adjust learning rate for SGD
@@ -437,45 +287,7 @@ def main():
 
             # train(args, model, model_teacher, device, train_loader, optimizer, epoch, awp_adversary)
 
-        #     model.eval()
-        #
-        #     model_teacher.eval()
-        #
-        #     print(
-        #         'Epoch: [%d | %d]  |\n' % (
-        #             epoch,
-        #             args.epochs,)
-        #     )
-        #     _, train_acc = eval_train(model, device, train_loader)
-        #     print('train_acc:', train_acc)
-        #
-        #     _, test_acc = eval_test(model, device, test_loader)
-        #     print('test_acc:', test_acc)
-        #
-        #     _, t_train_acc = eval_train(model_teacher, device, train_loader)
-        #     print('model_teacher_train_acc:', t_train_acc)
-        #
-        #     _, t_test_acc = eval_test(model_teacher, device, test_loader)
-        #     print('model_teacher_test_acc:', t_test_acc)
-        #
-        #     AT_models_test_loss, AT_models_test_acc = evaluate_standard(test_loader, model)
-        # # model.load_state_dict(torch.load(args.model_path), strict=False)
-        #     x_test = torch.cat([x for (x, y) in test_loader], 0)
-        #     y_test = torch.cat([y for (x, y) in test_loader], 0)
-        #     adversary = AutoAttack(model, norm='Linf', eps=args.epsilon, version='standard', log_path = "Logs/"+args.mark)
-        #
-        #     # adversary.seed = 0
-        #     adv_complete = adversary.run_standard_evaluation(x_test[:1000], y_test[:1000], bs=500)
-            # eval_adv_test_whitebox(model, device, test_loader, adversary)
-        # if epoch % args.save_freq == 0:
-        #     torch.save(model.state_dict(),
-        #                os.path.join(model_dir, '{}-epoch{}.pt'.format(args.mark,epoch)))
-        # evaluation on natural examples
-        #     open("Logs/"+args.mark,"a+").write('================================================================\n')
-        #     eval_train(model, device, train_loader)
-        #     eval_test(model, device, test_loader)
-        #     open("Logs/"+args.mark,"a+").write('================================================================\n')
-
+  
 
 if __name__ == '__main__':
     main()
