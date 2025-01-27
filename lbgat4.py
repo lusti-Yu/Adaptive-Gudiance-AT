@@ -4,23 +4,16 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 
-def squared_l2_norm(x):
-    flattened = x.view(x.unsqueeze(0).shape[0], -1)
-    return (flattened ** 2).sum(1)
 
 
-def l2_norm(x):
-    return squared_l2_norm(x).sqrt()
-
-
-def lbgat_loss(model, model_teacher,
+def AdaGAT_loss(model, model_teacher,
                 x_natural,
                 y,
                 optimizer,
                 step_size=0.003,
                 epsilon=0.031,
                 perturb_steps=10,
-                beta=1.0,
+                beta=0.0,
                 distance='l_inf'):
     # define KL-loss
     # criterion_kl = nn.KLDivLoss(size_average=False)
@@ -42,8 +35,6 @@ def lbgat_loss(model, model_teacher,
             with torch.enable_grad():
                 loss_kl = criterion_kl(F.log_softmax(model(x_adv), dim=1),
                                        F.softmax(model(x_natural), dim=1))
-                # loss_kl = criterion_kl(F.log_softmax(model(x_adv), dim=1),
-                #                        F.softmax(model_teacher(x_natural), dim=1))
                 loss_kl = torch.sum(loss_kl)
             grad = torch.autograd.grad(loss_kl, [x_adv])[0]
             x_adv = x_adv.detach() + step_size * torch.sign(grad.detach())
@@ -79,46 +70,15 @@ def lbgat_loss(model, model_teacher,
     out_natural=model(x_natural)
     out=model_teacher(x_natural)
 
-    # def kl_loss(a, b):
-    #     loss = -a * b + torch.log(b + 1e-5) * b
-    #     return loss
-    #
-    #
-    # kl_Loss1 = kl_loss(F.log_softmax(out, dim=1),
-    #                    F.softmax(out_natural, dim=1))
-    # kl_Loss2 = kl_loss(F.log_softmax(out_natural, dim=1),
-    #                    F.softmax(out, dim=1))
-    #
-    # kl_Loss1 = torch.mean(kl_Loss1)
-    # kl_Loss2 = torch.mean(kl_Loss2)
-    #
-    # loss_klloss = torch.abs(kl_Loss1 - kl_Loss2)
-    #
-    # kl_Loss5 = kl_loss(F.log_softmax(out, dim=1),
-    #                    F.softmax(out_adv, dim=1))
-    # kl_Loss3 = kl_loss(F.log_softmax(out_adv, dim=1),
-    #                    F.softmax(out, dim=1))
-    #
-    # kl_Loss5 = torch.mean(kl_Loss5)
-    # kl_Loss3 = torch.mean(kl_Loss3)
-    #
-    # loss_kladvloss = torch.abs(kl_Loss2 - kl_Loss3)
-    #
-    #
-    #
-    # # loss_mse=mse(out_adv,out)+ ce(out,y)
-    #
-    #
-    #
-    #
+
+
     loss_mse = ce(out, y) + mse(out_adv, out)
 
     # loss_mse = ce(out, y) + mse(out_adv, out) + 2.5 * mse(out_adv.detach(), out)
-    # print('kl_Loss5',  kl_Loss5)
-    # print('kl_Loss3', kl_Loss3)
+
     # print('mse', mse(out_adv, out))
     # print('mse', loss_mse )
-    loss_kl = (1.0 / out.size(0)) * criterion_kl(F.log_softmax(out_adv, dim=1),F.softmax(out_natural, dim=1))
+
 
     loss = loss_mse
     return loss
